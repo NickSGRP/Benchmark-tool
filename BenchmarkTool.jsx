@@ -917,4 +917,6 @@ const BenchmarkTool = () => {
   );
 };
 
-export default BenchmarkTool;
+// Render the component
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(BenchmarkTool));
