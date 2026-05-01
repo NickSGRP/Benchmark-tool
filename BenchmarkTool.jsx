@@ -66,14 +66,124 @@ const TrendingUp = ({ size = 24, style, ...props }) => (
   )
 );
 
+const Lock = ({ size = 24, style, ...props }) => (
+  React.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round', style, ...props },
+    React.createElement('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }),
+    React.createElement('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' })
+  )
+);
+
 const { useState, useEffect } = React;
 
-const BenchmarkTool = () => {
-  const [activeTab, setActiveTab] = useState('details');
+const AnalyserModal = ({ onSuccess, onClose }) => {
+  const [pass, setPass] = useState('');
+  const [error, setError] = useState('');
+  const attempt = () => {
+    if (pass === ANALYSER_PASS) { onSuccess(); }
+    else { setError('Incorrect passphrase'); setPass(''); }
+  };
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}}>
+      <div style={{background:'white',borderRadius:'12px',padding:'32px',width:'360px',maxWidth:'90vw',boxShadow:'0 25px 50px rgba(0,0,0,0.3)'}}>
+        <h3 style={{color:'#36454F',fontSize:'20px',fontWeight:'300',marginBottom:'8px'}}>Analyser Access</h3>
+        <p style={{color:'#64748b',fontSize:'14px',marginBottom:'24px'}}>Enter the passphrase to unlock History and Dashboard.</p>
+        <input
+          type="password"
+          value={pass}
+          onChange={e=>{setPass(e.target.value);setError('');}}
+          onKeyDown={e=>e.key==='Enter'&&attempt()}
+          placeholder="Passphrase"
+          autoFocus
+          style={{width:'100%',padding:'10px 14px',border:`1px solid ${error?'#D7335D':'#cbd5e1'}`,borderRadius:'8px',fontSize:'14px',marginBottom:'8px',boxSizing:'border-box'}}
+        />
+        {error&&<p style={{color:'#D7335D',fontSize:'12px',marginBottom:'8px'}}>{error}</p>}
+        <div style={{display:'flex',gap:'12px',marginTop:'16px'}}>
+          <button onClick={onClose} style={{flex:1,padding:'10px',border:'1px solid #e2e8f0',borderRadius:'8px',color:'#64748b',background:'white',cursor:'pointer',fontSize:'14px'}}>Cancel</button>
+          <button onClick={attempt} style={{flex:1,padding:'10px',borderRadius:'8px',color:'white',background:'linear-gradient(135deg,#9E1F40,#D7335D)',border:'none',cursor:'pointer',fontSize:'14px'}}>Unlock</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const IdentityGate = ({ onIdentify, onAnalyser }) => {
+  const [form, setForm] = useState({ name: '', email: '', firmName: '', role: '' });
+  const [errors, setErrors] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const roles = ['Partner', 'Director / CEO', 'Practice Manager', 'Manager', 'Senior Accountant', 'Accountant', 'Other'];
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Required';
+    if (!form.email.trim()) e.email = 'Required';
+    if (!form.firmName.trim()) e.firmName = 'Required';
+    if (!form.role) e.role = 'Required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+  const submit = () => {
+    if (validate()) {
+      localStorage.setItem(IDENTITY_KEY, JSON.stringify(form));
+      onIdentify(form);
+    }
+  };
+  return (
+    <div style={{minHeight:'100vh',background:'#000',display:'flex',flexDirection:'column'}}>
+      <div style={{padding:'16px 32px',display:'flex',alignItems:'center',gap:'16px',borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
+        <div style={{width:'40px',height:'40px',background:'linear-gradient(135deg,#9E1F40,#D7335D)',clipPath:'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)',position:'relative',flexShrink:0}}>
+          <div style={{position:'absolute',top:'10px',left:'7px',width:'20px',height:'12px',border:'2px solid white',borderRight:'none',borderBottom:'none',transform:'skewX(-10deg)'}}></div>
+        </div>
+        <div>
+          <div style={{color:'white',fontSize:'18px',fontWeight:'700',letterSpacing:'1px'}}>STRATEGICGROUP</div>
+          <div style={{color:'#C0A060',fontSize:'9px',letterSpacing:'3px'}}>POWERED BY VAULT</div>
+        </div>
+      </div>
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'40px 20px'}}>
+        <div style={{background:'white',borderRadius:'16px',padding:'40px',width:'100%',maxWidth:'480px',boxShadow:'0 25px 50px rgba(0,0,0,0.5)'}}>
+          <h2 style={{color:'#36454F',fontSize:'26px',fontWeight:'300',marginBottom:'4px'}}>Dream Firm Benchmark</h2>
+          <p style={{color:'#64748b',fontSize:'14px',marginBottom:'28px'}}>Top 20 Accounting Industry Benchmarks 2026</p>
+          <div style={{display:'grid',gap:'16px'}}>
+            {[
+              {key:'name',label:'Full Name',type:'text',ph:'Your name'},
+              {key:'email',label:'Email',type:'email',ph:'you@firm.com'},
+              {key:'firmName',label:'Firm Name',type:'text',ph:'Your accounting firm'},
+            ].map(({key,label,type,ph})=>(
+              <div key={key}>
+                <label style={{display:'block',fontSize:'13px',color:'#64748b',marginBottom:'6px'}}>{label} *</label>
+                <input type={type} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={ph}
+                  style={{width:'100%',padding:'10px 14px',border:`1px solid ${errors[key]?'#D7335D':'#cbd5e1'}`,borderRadius:'8px',fontSize:'14px',boxSizing:'border-box'}} />
+                {errors[key]&&<p style={{color:'#D7335D',fontSize:'11px',marginTop:'4px'}}>{errors[key]}</p>}
+              </div>
+            ))}
+            <div>
+              <label style={{display:'block',fontSize:'13px',color:'#64748b',marginBottom:'6px'}}>Role *</label>
+              <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}
+                style={{width:'100%',padding:'10px 14px',border:`1px solid ${errors.role?'#D7335D':'#cbd5e1'}`,borderRadius:'8px',fontSize:'14px',boxSizing:'border-box',background:'white'}}>
+                <option value="">Select your role...</option>
+                {roles.map(r=><option key={r} value={r}>{r}</option>)}
+              </select>
+              {errors.role&&<p style={{color:'#D7335D',fontSize:'11px',marginTop:'4px'}}>{errors.role}</p>}
+            </div>
+          </div>
+          <button onClick={submit} style={{marginTop:'24px',width:'100%',padding:'13px',background:'linear-gradient(135deg,#9E1F40,#D7335D)',color:'white',border:'none',borderRadius:'8px',fontSize:'15px',fontWeight:'500',cursor:'pointer'}}>
+            Begin Benchmark
+          </button>
+          <button onClick={()=>setShowModal(true)} style={{marginTop:'10px',width:'100%',padding:'8px',background:'transparent',color:'#94a3b8',border:'none',fontSize:'11px',cursor:'pointer',letterSpacing:'1px'}}>
+            ANALYSER ACCESS
+          </button>
+        </div>
+      </div>
+      {showModal&&<AnalyserModal onSuccess={()=>{setShowModal(false);onAnalyser();}} onClose={()=>setShowModal(false)} />}
+    </div>
+  );
+};
+
+const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
+  const [activeTab, setActiveTab] = useState(initAnalyser ? 'history' : 'details');
+  const [isAnalyser, setIsAnalyser] = useState(initAnalyser);
   const [selectedDomain, setSelectedDomain] = useState('People');
   const [responses, setResponses] = useState([]);
   const [currentResponse, setCurrentResponse] = useState({
-    userId: '',
+    userId: identity ? identity.firmName : '',
     date: new Date().toISOString().split('T')[0],
     metrics: {}
   });
@@ -84,6 +194,7 @@ const BenchmarkTool = () => {
   const [hoveredRadarDomain, setHoveredRadarDomain] = useState(null);
   const [hoveredMetric, setHoveredMetric] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [showAnalyserModal, setShowAnalyserModal] = useState(false);
 
   const m = {
     P1: { id: 'P1', name: 'P1: Staff turnover', domain: 'People', unit: 'pct', type: 'num', dir: 'low', typ: 15, hi: 10, desc: 'Retention proxy' },
@@ -127,29 +238,24 @@ const BenchmarkTool = () => {
 
   const load = async () => {
     try {
-      const stored = localStorage.getItem('bench-resp');
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) setResponses(JSON.parse(stored));
-    } catch (e) {
-      console.error('Failed to load data:', e);
-    }
+    } catch (e) { console.error('Failed to load data:', e); }
     setLoading(false);
   };
 
   const save = async (d) => {
-    try { 
-      localStorage.setItem('bench-resp', JSON.stringify(d));
-    } catch (e) {
-      console.error('Failed to save data:', e);
-    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+    catch (e) { console.error('Failed to save data:', e); }
   };
 
   const chg = (id, v) => {
-    setCurrentResponse(p => ({ 
-      ...p, 
-      metrics: { 
-        ...p.metrics, 
+    setCurrentResponse(p => ({
+      ...p,
+      metrics: {
+        ...p.metrics,
         [id]: v === '' ? undefined : (m[id].type === 'scl' ? parseInt(v) : parseFloat(v))
-      } 
+      }
     }));
   };
 
@@ -159,7 +265,7 @@ const BenchmarkTool = () => {
       const n = [...responses, { ...currentResponse, id: Date.now() }];
       setResponses(n);
       save(n);
-      setCurrentResponse({ userId: '', date: new Date().toISOString().split('T')[0], metrics: {} });
+      setCurrentResponse({ userId: identity ? identity.firmName : '', date: new Date().toISOString().split('T')[0], metrics: {} });
       alert('Saved!');
     } else {
       alert(`Please complete all fields. You have ${totalMetrics}/20 metrics filled.`);
@@ -229,30 +335,62 @@ const BenchmarkTool = () => {
     link.click();
   };
 
+  const handleUpgrade = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(IDENTITY_KEY) || '{}');
+      localStorage.setItem(IDENTITY_KEY, JSON.stringify({ ...stored, isAnalyser: true }));
+    } catch (e) {}
+    setIsAnalyser(true);
+    setShowAnalyserModal(false);
+    setActiveTab('history');
+  };
+
+  const visibleTabs = isAnalyser
+    ? ['details', 'input', 'analysis', 'history', 'dashboard']
+    : ['details', 'input', 'analysis'];
+
+  const myResponses = isAnalyser
+    ? responses
+    : responses.filter(r => identity && r.userId === identity.firmName);
+
   const I = icons[selectedDomain];
   const comp = Object.keys(currentResponse.metrics).filter(k => currentResponse.metrics[k] !== undefined).length;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div>Loading...</div></div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div style={{width:'50px',height:'50px',background:'linear-gradient(135deg,#9E1F40,#D7335D)',clipPath:'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)',position:'relative'}}>
-              <div style={{position:'absolute',top:'12px',left:'8px',width:'25px',height:'15px',border:'2px solid white',borderRight:'none',borderBottom:'none',transform:'skewX(-10deg)'}}></div>
-            </div>
-            <div>
-              <div style={{color:'#36454F',fontSize:'24px',fontWeight:'700',letterSpacing:'-0.5px'}}>STRATEGICGROUP</div>
-              <div style={{color:'#9E1F40',fontSize:'11px',letterSpacing:'2px'}}>YOUR TRUSTED IT PARTNER</div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div style={{background:'#000',padding:'14px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'14px'}}>
+          <div style={{width:'38px',height:'38px',background:'linear-gradient(135deg,#9E1F40,#D7335D)',clipPath:'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)',position:'relative',flexShrink:0}}>
+            <div style={{position:'absolute',top:'9px',left:'6px',width:'19px',height:'11px',border:'2px solid white',borderRight:'none',borderBottom:'none',transform:'skewX(-10deg)'}}></div>
           </div>
+          <div>
+            <div style={{color:'white',fontSize:'17px',fontWeight:'700',letterSpacing:'1px'}}>STRATEGICGROUP</div>
+            <div style={{color:'#C0A060',fontSize:'8px',letterSpacing:'3px'}}>POWERED BY VAULT</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+          {identity&&<span style={{color:'rgba(255,255,255,0.6)',fontSize:'13px'}}>{identity.name} · {identity.firmName}</span>}
+          {isAnalyser
+            ? <span style={{color:'#40BCA3',fontSize:'11px',letterSpacing:'1px',border:'1px solid #40BCA3',padding:'4px 10px',borderRadius:'4px'}}>ANALYSER MODE</span>
+            : <button onClick={()=>setShowAnalyserModal(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'6px',padding:'6px 12px',color:'rgba(255,255,255,0.5)',fontSize:'11px',cursor:'pointer',letterSpacing:'1px',display:'flex',alignItems:'center',gap:'6px'}}>
+                <Lock size={12} style={{color:'rgba(255,255,255,0.5)'}} />ANALYSER
+              </button>
+          }
+        </div>
+      </div>
+
+      {showAnalyserModal&&<AnalyserModal onSuccess={handleUpgrade} onClose={()=>setShowAnalyserModal(false)} />}
+
+      <div className="max-w-7xl mx-auto p-8">
+        <div className="mb-8">
           <h1 className="text-4xl font-light mb-2" style={{color:'#36454F'}}>Dream Firm Benchmark Analysis</h1>
           <p className="text-slate-600">Top 20 Accounting Industry Benchmarks 2026</p>
         </div>
 
         <div className="flex gap-2 mb-6 border-b border-slate-200 flex-wrap">
-          {['details','input','analysis','history','dashboard'].map(t => (
+          {visibleTabs.map(t => (
             <button key={t} onClick={()=>setActiveTab(t)} className="px-6 py-3 font-light capitalize" style={activeTab===t?{borderBottom:'2px solid #9E1F40',color:'#36454F'}:{color:'#64748b'}}>
               {t === 'details' ? 'Details & Assumptions' : t}
             </button>
@@ -337,7 +475,15 @@ const BenchmarkTool = () => {
               <div className="mb-6 grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-slate-600 mb-2">Firm / User ID</label>
-                  <input type="text" value={currentResponse.userId} onChange={(e)=>setCurrentResponse({...currentResponse,userId:e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="Partner name" />
+                  <input
+                    type="text"
+                    value={currentResponse.userId}
+                    onChange={isAnalyser ? (e)=>setCurrentResponse({...currentResponse,userId:e.target.value}) : undefined}
+                    readOnly={!isAnalyser}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg"
+                    style={!isAnalyser ? {background:'#f8fafc',color:'#64748b'} : {}}
+                    placeholder="Firm name"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-slate-600 mb-2">Date</label>
@@ -385,7 +531,6 @@ const BenchmarkTool = () => {
                 const currentIndex = domainOrder.indexOf(selectedDomain);
                 const nextDomain = currentIndex < domainOrder.length - 1 ? domainOrder[currentIndex + 1] : null;
                 const allCurrentDomainComplete = currentDomainMetrics === 5;
-                
                 if (comp === 20) {
                   return (
                     <button onClick={sub} disabled={!currentResponse.userId} className="mt-6 w-full text-white py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50" style={{background:currentResponse.userId?'linear-gradient(135deg,#40BCA3,#36454F)':'#9CA3AF'}}>
@@ -418,24 +563,26 @@ const BenchmarkTool = () => {
 
         {activeTab === 'analysis' && (
           <div className="space-y-6">
-            {responses.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center"><p className="text-slate-600">No data yet.</p></div>
+            {myResponses.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
+                <p className="text-slate-600">{isAnalyser ? 'No data yet.' : 'No data yet for your firm. Complete the Input tab to see your analysis.'}</p>
+              </div>
             ) : (
               <>
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h2 className="text-xl font-light" style={{color:'#36454F'}}>Latest: {responses[responses.length-1].userId}</h2>
-                      <p className="text-sm text-slate-500">{responses[responses.length-1].date}</p>
+                      <h2 className="text-xl font-light" style={{color:'#36454F'}}>Latest: {myResponses[myResponses.length-1].userId}</h2>
+                      <p className="text-sm text-slate-500">{myResponses[myResponses.length-1].date}</p>
                     </div>
-                    <button onClick={()=>exp(responses[responses.length-1].id)} className="flex items-center gap-2 px-6 py-3 text-white rounded-lg" style={{background:'linear-gradient(135deg,#40BCA3,#36454F)'}}>
+                    <button onClick={()=>exp(myResponses[myResponses.length-1].id)} className="flex items-center gap-2 px-6 py-3 text-white rounded-lg" style={{background:'linear-gradient(135deg,#40BCA3,#36454F)'}}>
                       <Download size={18} />Export
                     </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {Object.keys(dom).map(d => {
-                    const sc = ds(d, responses[responses.length-1].metrics);
+                    const sc = ds(d, myResponses[myResponses.length-1].metrics);
                     const DI = icons[d];
                     return (
                       <div key={d} className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
@@ -451,7 +598,7 @@ const BenchmarkTool = () => {
                   })}
                 </div>
                 {Object.keys(dom).map(d => {
-                  const latest = responses[responses.length-1];
+                  const latest = myResponses[myResponses.length-1];
                   return (
                     <div key={d} className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                       <h3 className="text-lg font-light mb-4" style={{color:'#36454F'}}>{d} Details</h3>
@@ -605,15 +752,7 @@ const BenchmarkTool = () => {
                                 const lx=200+170*Math.cos(ang);
                                 const ly=200+170*Math.sin(ang);
                                 return(<g key={i}>
-                                  <circle 
-                                    cx={s.x} 
-                                    cy={s.y} 
-                                    r="8" 
-                                    fill={hoveredRadarDomain===s.label?"#40BCA3":"transparent"}
-                                    style={{cursor:'pointer'}}
-                                    onMouseEnter={()=>setHoveredRadarDomain(s.label)}
-                                    onMouseLeave={()=>setHoveredRadarDomain(null)}
-                                  />
+                                  <circle cx={s.x} cy={s.y} r="8" fill={hoveredRadarDomain===s.label?"#40BCA3":"transparent"} style={{cursor:'pointer'}} onMouseEnter={()=>setHoveredRadarDomain(s.label)} onMouseLeave={()=>setHoveredRadarDomain(null)} />
                                   <circle cx={s.x} cy={s.y} r="4" fill="#40BCA3"/>
                                   <text x={lx} y={ly} textAnchor="middle" fontSize="14" fill="#36454F" fontWeight="500">{s.label}</text>
                                   <text x={lx} y={ly+15} textAnchor="middle" fontSize="12" fill={s.score>=0?'#40BCA3':'#D7335D'}>{s.score>=0?'+':''}{s.score.toFixed(0)}%</text>
@@ -644,9 +783,7 @@ const BenchmarkTool = () => {
                                 {metrics.map(mt => (
                                   <div key={mt.id} className="flex justify-between text-xs">
                                     <span className="text-slate-600">{mt.id}:</span>
-                                    <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>
-                                      {mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%
-                                    </span>
+                                    <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>{mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%</span>
                                   </div>
                                 ))}
                               </div>
@@ -682,30 +819,12 @@ const BenchmarkTool = () => {
                             <div className="absolute z-10 bg-white border-2 border-slate-300 rounded-lg shadow-lg p-3 text-xs" style={{top:'100%',left:'0',marginTop:'8px',minWidth:'200px'}}>
                               <div className="font-medium text-slate-700 mb-2">{d} Statistics</div>
                               <div className="space-y-1">
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Your Score:</span>
-                                  <span className="font-medium" style={{color:'#40BCA3'}}>{curr>=0?'+':''}{curr.toFixed(1)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Median:</span>
-                                  <span className="font-medium text-slate-700">{med>=0?'+':''}{med.toFixed(1)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Q1 (25th):</span>
-                                  <span className="text-slate-600">{q1>=0?'+':''}{q1.toFixed(1)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Q3 (75th):</span>
-                                  <span className="text-slate-600">{q3>=0?'+':''}{q3.toFixed(1)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Min:</span>
-                                  <span className="text-slate-600">{min>=0?'+':''}{min.toFixed(1)}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-600">Max:</span>
-                                  <span className="text-slate-600">{max>=0?'+':''}{max.toFixed(1)}%</span>
-                                </div>
+                                <div className="flex justify-between"><span className="text-slate-600">Your Score:</span><span className="font-medium" style={{color:'#40BCA3'}}>{curr>=0?'+':''}{curr.toFixed(1)}%</span></div>
+                                <div className="flex justify-between"><span className="text-slate-600">Median:</span><span className="font-medium text-slate-700">{med>=0?'+':''}{med.toFixed(1)}%</span></div>
+                                <div className="flex justify-between"><span className="text-slate-600">Q1 (25th):</span><span className="text-slate-600">{q1>=0?'+':''}{q1.toFixed(1)}%</span></div>
+                                <div className="flex justify-between"><span className="text-slate-600">Q3 (75th):</span><span className="text-slate-600">{q3>=0?'+':''}{q3.toFixed(1)}%</span></div>
+                                <div className="flex justify-between"><span className="text-slate-600">Min:</span><span className="text-slate-600">{min>=0?'+':''}{min.toFixed(1)}%</span></div>
+                                <div className="flex justify-between"><span className="text-slate-600">Max:</span><span className="text-slate-600">{max>=0?'+':''}{max.toFixed(1)}%</span></div>
                               </div>
                             </div>
                           )}
@@ -722,87 +841,48 @@ const BenchmarkTool = () => {
                         <rect x="50" y="30" width="300" height="220" fill="white" stroke="#e2e8f0"/>
                         <line x1="200" y1="30" x2="200" y2="250" stroke="#e2e8f0" strokeDasharray="4"/>
                         <line x1="50" y1="140" x2="350" y2="140" stroke="#e2e8f0" strokeDasharray="4"/>
-                        
-                        {/* Quadrant labels */}
                         <text x="125" y="80" fontSize="16" fill="#e2e8f0" fontWeight="300" textAnchor="middle">Fragile</text>
                         <text x="275" y="80" fontSize="16" fill="#e2e8f0" fontWeight="300" textAnchor="middle">Leading</text>
                         <text x="125" y="210" fontSize="16" fill="#e2e8f0" fontWeight="300" textAnchor="middle">Foundational</text>
                         <text x="275" y="210" fontSize="16" fill="#e2e8f0" fontWeight="300" textAnchor="middle">Under-utilised</text>
-                        
                         <text x="190" y="275" fontSize="11" fill="#64748b" fontWeight="500">Maturity →</text>
                         <text x="25" y="145" fontSize="11" fill="#64748b" fontWeight="500" transform="rotate(-90 25 145)">Performance →</text>
                         {(() => {
                           const filt=dashboardView==='all'?responses:responses.filter(r=>r.userId===selectedFirm);
                           if(filt.length===0)return null;
                           const latest=filt[filt.length-1];
-                          
-                          // Define maturity and performance metrics for each domain
                           const maturityMetrics = {
-                            People: ['P3'], // Staff per partner (leverage)
-                            Process: ['Pr5'], // Automated workflows
-                            Data: ['D3', 'D4', 'D5'], // Analytics, automation, single source
-                            Technology: ['T1', 'T2', 'T3', 'T4', 'T5'] // All tech metrics
+                            People: ['P3'],
+                            Process: ['Pr5'],
+                            Data: ['D3', 'D4', 'D5'],
+                            Technology: ['T1', 'T2', 'T3', 'T4', 'T5']
                           };
-                          
                           const performanceMetrics = {
-                            People: ['P1', 'P2', 'P4', 'P5'], // Turnover, revenue/employee, productivity, billable
-                            Process: ['Pr1', 'Pr2', 'Pr3', 'Pr4'], // Profit margin, lock-up, turnaround, recovery
-                            Data: ['D1', 'D2'], // Data rework, data for advisory
-                            Technology: [] // Tech is pure enabler
+                            People: ['P1', 'P2', 'P4', 'P5'],
+                            Process: ['Pr1', 'Pr2', 'Pr3', 'Pr4'],
+                            Data: ['D1', 'D2'],
+                            Technology: []
                           };
-                          
                           const cols={People:'#82735C',Process:'#5603AD',Data:'#6C8EAD',Technology:'#243E36'};
-                          
                           return Object.keys(dom).map(domain => {
-                            // Calculate maturity score
                             const matMetrics = maturityMetrics[domain];
                             const matScores = matMetrics.map(id => {
                               const v = latest.metrics[id];
                               return v !== undefined ? gap(id, v) : null;
                             }).filter(s => s !== null);
                             const matScore = matScores.length > 0 ? matScores.reduce((a,b) => a+b, 0) / matScores.length : 0;
-                            
-                            // Calculate performance score
                             const perfMetrics = performanceMetrics[domain];
                             const perfScores = perfMetrics.length > 0 ? perfMetrics.map(id => {
                               const v = latest.metrics[id];
                               return v !== undefined ? gap(id, v) : null;
                             }).filter(s => s !== null) : [];
                             const perfScore = perfScores.length > 0 ? perfScores.reduce((a,b) => a+b, 0) / perfScores.length : matScore;
-                            
-                            // Map to coordinates (maturity increases right, performance increases up)
                             const x = 50 + ((matScore + 100) / 200) * 300;
                             const y = 250 - ((perfScore + 100) / 200) * 220;
-                            
                             return (<g key={domain}>
-                              <circle 
-                                cx={x} 
-                                cy={y} 
-                                r="12" 
-                                fill="transparent"
-                                style={{cursor:'pointer'}}
-                                onMouseEnter={()=>setHoveredMetric(domain)}
-                                onMouseLeave={()=>setHoveredMetric(null)}
-                              />
-                              <circle 
-                                cx={x} 
-                                cy={y} 
-                                r="8" 
-                                fill={cols[domain]} 
-                                opacity={hoveredMetric===domain?"1":"0.8"}
-                                stroke="white"
-                                strokeWidth="2"
-                              />
-                              <text 
-                                x={x} 
-                                y={y-15} 
-                                textAnchor="middle" 
-                                fontSize="11" 
-                                fill={cols[domain]}
-                                fontWeight="600"
-                              >
-                                {domain}
-                              </text>
+                              <circle cx={x} cy={y} r="12" fill="transparent" style={{cursor:'pointer'}} onMouseEnter={()=>setHoveredMetric(domain)} onMouseLeave={()=>setHoveredMetric(null)} />
+                              <circle cx={x} cy={y} r="8" fill={cols[domain]} opacity={hoveredMetric===domain?"1":"0.8"} stroke="white" strokeWidth="2" />
+                              <text x={x} y={y-15} textAnchor="middle" fontSize="11" fill={cols[domain]} fontWeight="600">{domain}</text>
                             </g>);
                           });
                         })()}
@@ -812,60 +892,47 @@ const BenchmarkTool = () => {
                         if(filt.length===0)return null;
                         const latest=filt[filt.length-1];
                         const domain = hoveredMetric;
-                        
                         const maturityMetrics = {
                           People: ['P3'],
                           Process: ['Pr5'],
                           Data: ['D3', 'D4', 'D5'],
                           Technology: ['T1', 'T2', 'T3', 'T4', 'T5']
                         };
-                        
                         const performanceMetrics = {
                           People: ['P1', 'P2', 'P4', 'P5'],
                           Process: ['Pr1', 'Pr2', 'Pr3', 'Pr4'],
                           Data: ['D1', 'D2'],
                           Technology: []
                         };
-                        
                         const matMetrics = maturityMetrics[domain];
                         const matScores = matMetrics.map(id => {
                           const v = latest.metrics[id];
                           return v !== undefined ? {id, gap: gap(id, v), name: m[id].name} : null;
                         }).filter(s => s !== null);
                         const matScore = matScores.length > 0 ? matScores.reduce((a,b) => a+b.gap, 0) / matScores.length : 0;
-                        
                         const perfMetrics = performanceMetrics[domain];
                         const perfScores = perfMetrics.length > 0 ? perfMetrics.map(id => {
                           const v = latest.metrics[id];
                           return v !== undefined ? {id, gap: gap(id, v), name: m[id].name} : null;
                         }).filter(s => s !== null) : [];
                         const perfScore = perfScores.length > 0 ? perfScores.reduce((a,b) => a+b.gap, 0) / perfScores.length : matScore;
-                        
-                        // Determine quadrant
                         let quadrant = '';
                         if (perfScore >= 0 && matScore >= 0) quadrant = 'Leading';
                         else if (perfScore >= 0 && matScore < 0) quadrant = 'Fragile';
                         else if (perfScore < 0 && matScore >= 0) quadrant = 'Under-utilised';
                         else quadrant = 'Foundational';
-                        
                         return (
                           <div className="absolute bg-white border-2 border-slate-300 rounded-lg shadow-lg p-3 text-xs z-10" style={{top:'20px',right:'20px',minWidth:'220px',maxWidth:'280px'}}>
                             <div className="font-medium text-slate-700 mb-1">{domain}</div>
-                            <div className="text-xs mb-2 px-2 py-1 rounded inline-block" style={{backgroundColor:'#f1f5f9',color:'#64748b'}}>
-                              {quadrant}
-                            </div>
+                            <div className="text-xs mb-2 px-2 py-1 rounded inline-block" style={{backgroundColor:'#f1f5f9',color:'#64748b'}}>{quadrant}</div>
                             <div className="mb-2 pb-2 border-b border-slate-200">
                               <div className="flex justify-between mb-1">
                                 <span className="text-slate-600">Maturity Score:</span>
-                                <span className="font-medium" style={{color:matScore>=0?'#40BCA3':'#D7335D'}}>
-                                  {matScore>=0?'+':''}{matScore.toFixed(1)}%
-                                </span>
+                                <span className="font-medium" style={{color:matScore>=0?'#40BCA3':'#D7335D'}}>{matScore>=0?'+':''}{matScore.toFixed(1)}%</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-slate-600">Performance Score:</span>
-                                <span className="font-medium" style={{color:perfScore>=0?'#40BCA3':'#D7335D'}}>
-                                  {perfScore>=0?'+':''}{perfScore.toFixed(1)}%
-                                </span>
+                                <span className="font-medium" style={{color:perfScore>=0?'#40BCA3':'#D7335D'}}>{perfScore>=0?'+':''}{perfScore.toFixed(1)}%</span>
                               </div>
                             </div>
                             {matScores.length > 0 && (
@@ -875,9 +942,7 @@ const BenchmarkTool = () => {
                                   {matScores.map(mt => (
                                     <div key={mt.id} className="flex justify-between text-xs">
                                       <span className="text-slate-600">{mt.id}:</span>
-                                      <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>
-                                        {mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%
-                                      </span>
+                                      <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>{mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%</span>
                                     </div>
                                   ))}
                                 </div>
@@ -890,9 +955,7 @@ const BenchmarkTool = () => {
                                   {perfScores.map(mt => (
                                     <div key={mt.id} className="flex justify-between text-xs">
                                       <span className="text-slate-600">{mt.id}:</span>
-                                      <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>
-                                        {mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%
-                                      </span>
+                                      <span style={{color:mt.gap>=0?'#40BCA3':'#D7335D'}}>{mt.gap>=0?'+':''}{mt.gap.toFixed(0)}%</span>
                                     </div>
                                   ))}
                                 </div>
@@ -932,36 +995,16 @@ const BenchmarkTool = () => {
                                 const col=g>=0?`rgba(64,188,163,${int})`:`rgba(215,51,93,${int})`;
                                 const hoverKey = id+'_'+r.id;
                                 return (
-                                  <td 
-                                    key={id} 
-                                    className="p-1 text-center font-medium relative cursor-pointer" 
-                                    style={{backgroundColor:col,color:int>0.5?'white':'#36454F'}}
-                                    onMouseEnter={()=>setHoveredMetric(hoverKey)}
-                                    onMouseLeave={()=>setHoveredMetric(null)}
-                                  >
+                                  <td key={id} className="p-1 text-center font-medium relative cursor-pointer" style={{backgroundColor:col,color:int>0.5?'white':'#36454F'}} onMouseEnter={()=>setHoveredMetric(hoverKey)} onMouseLeave={()=>setHoveredMetric(null)}>
                                     {g>=0?'+':''}{g.toFixed(0)}%
                                     {hoveredMetric === hoverKey && (
                                       <div className="absolute z-20 bg-white border-2 border-slate-300 rounded-lg shadow-lg p-3 text-xs" style={{top:'100%',left:'50%',transform:'translateX(-50%)',marginTop:'4px',minWidth:'180px',whiteSpace:'nowrap'}}>
                                         <div className="font-medium text-slate-700 mb-1">{m[id].name}</div>
                                         <div className="space-y-1">
-                                          <div className="flex justify-between gap-3">
-                                            <span className="text-slate-600">Firm:</span>
-                                            <span className="font-medium">{r.userId}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-3">
-                                            <span className="text-slate-600">Value:</span>
-                                            <span className="font-medium">{fv(id, v)}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-3">
-                                            <span className="text-slate-600">Target:</span>
-                                            <span className="text-slate-600">{fb(id)}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-3">
-                                            <span className="text-slate-600">Gap:</span>
-                                            <span className="font-medium" style={{color:g>=0?'#40BCA3':'#D7335D'}}>
-                                              {g>=0?'+':''}{g.toFixed(1)}%
-                                            </span>
-                                          </div>
+                                          <div className="flex justify-between gap-3"><span className="text-slate-600">Firm:</span><span className="font-medium">{r.userId}</span></div>
+                                          <div className="flex justify-between gap-3"><span className="text-slate-600">Value:</span><span className="font-medium">{fv(id, v)}</span></div>
+                                          <div className="flex justify-between gap-3"><span className="text-slate-600">Target:</span><span className="text-slate-600">{fb(id)}</span></div>
+                                          <div className="flex justify-between gap-3"><span className="text-slate-600">Gap:</span><span className="font-medium" style={{color:g>=0?'#40BCA3':'#D7335D'}}>{g>=0?'+':''}{g.toFixed(1)}%</span></div>
                                         </div>
                                       </div>
                                     )}
@@ -984,5 +1027,38 @@ const BenchmarkTool = () => {
   );
 };
 
+const BenchmarkApp = () => {
+  const [identity, setIdentity] = useState(null);
+  const [isAnalyser, setIsAnalyser] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(IDENTITY_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.isAnalyser && !parsed.name) {
+          setIsAnalyser(true);
+        } else if (parsed.isAnalyser && parsed.name) {
+          setIsAnalyser(true);
+          setIdentity(parsed);
+        } else {
+          setIdentity(parsed);
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleAnalyser = () => {
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify({ isAnalyser: true }));
+    setIsAnalyser(true);
+  };
+
+  if (!identity && !isAnalyser) {
+    return <IdentityGate onIdentify={setIdentity} onAnalyser={handleAnalyser} />;
+  }
+
+  return <BenchmarkTool identity={identity} isAnalyser={isAnalyser} />;
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(BenchmarkTool));
+root.render(React.createElement(BenchmarkApp));
