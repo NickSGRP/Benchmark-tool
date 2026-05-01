@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const darker = `#${Math.max(0,r-30).toString(16).padStart(2,'0')}${Math.max(0,g-30).toString(16).padStart(2,'0')}${Math.max(0,b-30).toString(16).padStart(2,'0')}`;
   root.style.setProperty('--primary-color', `linear-gradient(135deg, ${lighter}, ${baseColor}, ${darker})`);
   root.style.setProperty('--header-textColor', '#FFFFFF');
+  initializeChat();
 });
 
 const environmentEndPoint = tokenEndpoint.slice(0, tokenEndpoint.indexOf("/powervirtualagents"));
@@ -113,7 +114,6 @@ async function initializeChat() {
     webChatInstance = window.WebChat.renderWebChat({ directLine, styleOptions, store: createCustomStore() }, document.getElementById("webchat"));
   } catch (err) { console.error("Failed to initialize chat:", err); }
 }
-initializeChat();
 </script>
 
 <style>
