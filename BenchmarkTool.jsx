@@ -80,7 +80,7 @@ const IDENTITY_KEY = 'bench-identity';
 // ── Identity Gate ─────────────────────────────────────────────────────────────
 const ROLES = ['Partner / Director', 'Practice Manager', 'Senior Manager', 'Manager', 'Senior Accountant', 'Accountant', 'CFO / Finance Manager', 'Other'];
 
-const IdentityGate = ({ onSubmit }) => {
+const IdentityGate = ({ onSubmit, onAnalyserAccess }) => {
   const [form, setForm] = useState({ name: '', email: '', firmName: '', role: '' });
   const [errors, setErrors] = useState({});
 
@@ -425,8 +425,14 @@ const BenchmarkTool = () => {
   const I = icons[selectedDomain];
   const comp = Object.keys(currentResponse.metrics).filter(k => currentResponse.metrics[k] !== undefined).length;
 
-  // Show identity gate if no identity
-  if (!identity) return React.createElement(IdentityGate, { onSubmit: setIdentity });
+  // Analyser bypasses identity gate — goes straight to app
+  if (!identity && !isAnalyser) return React.createElement(React.Fragment, null,
+    React.createElement(IdentityGate, { onSubmit: setIdentity, onAnalyserAccess: () => setShowAnalyserModal(true) }),
+    showAnalyserModal && React.createElement(AnalyserModal, {
+      onSuccess: () => { setIsAnalyser(true); setShowAnalyserModal(false); setActiveTab('history'); setIdentity(prev => prev || { firmName: 'SGRP Analyser', email: '', name: 'Analyser', role: 'SGRP' }); },
+      onClose: () => setShowAnalyserModal(false)
+    })
+  );
   if (loading) return React.createElement('div', { className: 'min-h-screen flex items-center justify-center' }, React.createElement('div', null, 'Loading...'));
 
   // Public tabs always visible; analyser tabs only when unlocked
@@ -488,7 +494,7 @@ const BenchmarkTool = () => {
 
       // ── Analyser modal ─────────────────────────────────────────────────────
       showAnalyserModal && React.createElement(AnalyserModal, {
-        onSuccess: () => { setIsAnalyser(true); setShowAnalyserModal(false); setActiveTab('history'); },
+        onSuccess: () => { setIsAnalyser(true); setShowAnalyserModal(false); setActiveTab('history'); setIdentity(prev => prev || { firmName: 'SGRP Analyser', email: '', name: 'Analyser', role: 'SGRP' }); },
         onClose: () => setShowAnalyserModal(false)
       }),
 
