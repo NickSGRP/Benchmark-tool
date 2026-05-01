@@ -122,7 +122,7 @@ const IdentityGate = ({ onIdentify, onAnalyser }) => {
   };
   const submit = () => {
     if (validate()) {
-      localStorage.setItem(IDENTITY_KEY, JSON.stringify(form));
+      sessionStorage.setItem(IDENTITY_KEY, JSON.stringify(form));
       onIdentify(form);
     }
   };
@@ -195,6 +195,7 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
   const [hoveredMetric, setHoveredMetric] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [showAnalyserModal, setShowAnalyserModal] = useState(false);
+  const [modalMode, setModalMode] = useState('upgrade');
   const [viewAsUser, setViewAsUser] = useState(false);
 
   const m = {
@@ -338,12 +339,17 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
 
   const handleUpgrade = () => {
     try {
-      const stored = JSON.parse(localStorage.getItem(IDENTITY_KEY) || '{}');
-      localStorage.setItem(IDENTITY_KEY, JSON.stringify({ ...stored, isAnalyser: true }));
+      const stored = JSON.parse(sessionStorage.getItem(IDENTITY_KEY) || '{}');
+      sessionStorage.setItem(IDENTITY_KEY, JSON.stringify({ ...stored, isAnalyser: true }));
     } catch (e) {}
     setIsAnalyser(true);
     setShowAnalyserModal(false);
     setActiveTab('history');
+  };
+
+  const handleReAuth = () => {
+    setShowAnalyserModal(false);
+    setViewAsUser(false);
   };
 
   const effectiveAnalyser = isAnalyser && !viewAsUser;
@@ -357,10 +363,12 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
     : responses.filter(r => identity && r.userId === identity.firmName);
 
   const toggleUserView = () => {
-    const next = !viewAsUser;
-    setViewAsUser(next);
-    if (next && (activeTab === 'history' || activeTab === 'dashboard')) {
-      setActiveTab('analysis');
+    if (viewAsUser) {
+      setModalMode('reauth');
+      setShowAnalyserModal(true);
+    } else {
+      setViewAsUser(true);
+      if (activeTab === 'history' || activeTab === 'dashboard') setActiveTab('analysis');
     }
   };
 
@@ -393,14 +401,14 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
                   {viewAsUser ? '← Analyser' : 'User View →'}
                 </button>
               </div>
-            : <button onClick={()=>setShowAnalyserModal(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'6px',padding:'6px 12px',color:'rgba(255,255,255,0.5)',fontSize:'11px',cursor:'pointer',letterSpacing:'1px',display:'flex',alignItems:'center',gap:'6px'}}>
+            : <button onClick={()=>{setModalMode('upgrade');setShowAnalyserModal(true);}} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'6px',padding:'6px 12px',color:'rgba(255,255,255,0.5)',fontSize:'11px',cursor:'pointer',letterSpacing:'1px',display:'flex',alignItems:'center',gap:'6px'}}>
                 <Lock size={12} style={{color:'rgba(255,255,255,0.5)'}} />ANALYSER
               </button>
           }
         </div>
       </div>
 
-      {showAnalyserModal&&<AnalyserModal onSuccess={handleUpgrade} onClose={()=>setShowAnalyserModal(false)} />}
+      {showAnalyserModal&&<AnalyserModal onSuccess={modalMode==='reauth'?handleReAuth:handleUpgrade} onClose={()=>setShowAnalyserModal(false)} />}
 
       <div className="max-w-7xl mx-auto p-8">
         <div className="mb-8">
@@ -1052,7 +1060,7 @@ const BenchmarkApp = () => {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(IDENTITY_KEY);
+      const stored = sessionStorage.getItem(IDENTITY_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.isAnalyser && !parsed.name) {
@@ -1068,7 +1076,7 @@ const BenchmarkApp = () => {
   }, []);
 
   const handleAnalyser = () => {
-    localStorage.setItem(IDENTITY_KEY, JSON.stringify({ isAnalyser: true }));
+    sessionStorage.setItem(IDENTITY_KEY, JSON.stringify({ isAnalyser: true }));
     setIsAnalyser(true);
   };
 
