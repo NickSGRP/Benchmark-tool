@@ -1,3 +1,7 @@
+const ANALYSER_PASS = 'sgrp2026';
+const STORAGE_KEY = 'bench-resp';
+const IDENTITY_KEY = 'bench-identity';
+
 const Users = ({ size = 24, style, ...props }) => (
   React.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round', style, ...props },
     React.createElement('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }),
