@@ -195,6 +195,7 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
   const [hoveredMetric, setHoveredMetric] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [showAnalyserModal, setShowAnalyserModal] = useState(false);
+  const [viewAsUser, setViewAsUser] = useState(false);
 
   const m = {
     P1: { id: 'P1', name: 'P1: Staff turnover', domain: 'People', unit: 'pct', type: 'num', dir: 'low', typ: 15, hi: 10, desc: 'Retention proxy' },
@@ -345,13 +346,23 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
     setActiveTab('history');
   };
 
-  const visibleTabs = isAnalyser
+  const effectiveAnalyser = isAnalyser && !viewAsUser;
+
+  const visibleTabs = effectiveAnalyser
     ? ['details', 'input', 'analysis', 'history', 'dashboard']
     : ['details', 'input', 'analysis'];
 
-  const myResponses = isAnalyser
+  const myResponses = effectiveAnalyser
     ? responses
     : responses.filter(r => identity && r.userId === identity.firmName);
+
+  const toggleUserView = () => {
+    const next = !viewAsUser;
+    setViewAsUser(next);
+    if (next && (activeTab === 'history' || activeTab === 'dashboard')) {
+      setActiveTab('analysis');
+    }
+  };
 
   const I = icons[selectedDomain];
   const comp = Object.keys(currentResponse.metrics).filter(k => currentResponse.metrics[k] !== undefined).length;
@@ -373,7 +384,15 @@ const BenchmarkTool = ({ identity, isAnalyser: initAnalyser }) => {
         <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
           {identity&&<span style={{color:'rgba(255,255,255,0.6)',fontSize:'13px'}}>{identity.name} · {identity.firmName}</span>}
           {isAnalyser
-            ? <span style={{color:'#40BCA3',fontSize:'11px',letterSpacing:'1px',border:'1px solid #40BCA3',padding:'4px 10px',borderRadius:'4px'}}>ANALYSER MODE</span>
+            ? <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                {viewAsUser
+                  ? <span style={{color:'rgba(255,255,255,0.4)',fontSize:'11px',letterSpacing:'1px',border:'1px solid rgba(255,255,255,0.2)',padding:'4px 10px',borderRadius:'4px'}}>USER VIEW</span>
+                  : <span style={{color:'#40BCA3',fontSize:'11px',letterSpacing:'1px',border:'1px solid #40BCA3',padding:'4px 10px',borderRadius:'4px'}}>ANALYSER MODE</span>
+                }
+                <button onClick={toggleUserView} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.25)',borderRadius:'6px',padding:'5px 11px',color:'rgba(255,255,255,0.65)',fontSize:'11px',cursor:'pointer',letterSpacing:'0.5px'}}>
+                  {viewAsUser ? '← Analyser' : 'User View →'}
+                </button>
+              </div>
             : <button onClick={()=>setShowAnalyserModal(true)} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'6px',padding:'6px 12px',color:'rgba(255,255,255,0.5)',fontSize:'11px',cursor:'pointer',letterSpacing:'1px',display:'flex',alignItems:'center',gap:'6px'}}>
                 <Lock size={12} style={{color:'rgba(255,255,255,0.5)'}} />ANALYSER
               </button>
